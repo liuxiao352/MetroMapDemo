@@ -1,19 +1,18 @@
 package com.example.metromapdemo;
 
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
-import android.graphics.Color;
-import android.graphics.RectF;
+import android.graphics.PointF;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.widget.Toast;
+import android.view.animation.LinearInterpolator;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -71,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
             public void onZoomEnd(ZoomLayout view, float scale) {
                 if (!isLocationScale) {
                     topControlHide();
-                }else{
+                } else {
                     isLocationScale = false;
                 }
             }
@@ -91,9 +90,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                     float dx = x - zoomLayout.getWidth() / 2f;
                     float dy = y - zoomLayout.getHeight() / 2f;
-                    view.moveBy(dx, dy);
+                    startMoveCenter(view, dx, dy);
                     showPopupWindow(zoomLayout.getWidth() / 2f, zoomLayout.getHeight() / 2f, stationsData);
-                }else{
+                } else {
                     toggleTopControl();
                 }
                 return true;
@@ -111,15 +110,15 @@ public class MainActivity extends AppCompatActivity {
                 (int) y - 35, Gravity.TOP);
     }
 
-    private void toggleTopControl(){
+    private void toggleTopControl() {
         if (topControl.getVisibility() == View.VISIBLE) {
             topControlHide();
-        }else{
+        } else {
             topControlShow();
         }
     }
 
-    private void topControlHide(){
+    private void topControlHide() {
         if (topControl.getVisibility() == View.GONE) {
             return;
         }
@@ -128,13 +127,31 @@ public class MainActivity extends AppCompatActivity {
         topControl.startAnimation(topOut);
     }
 
-    private void topControlShow(){
+    private void topControlShow() {
         if (topControl.getVisibility() == View.VISIBLE) {
             return;
         }
         //消失
         topControl.setVisibility(View.VISIBLE);
         topControl.startAnimation(topIn);
+    }
+
+    private void startMoveCenter(final ZoomLayout view, final float dx, final float dy) {
+        final float readDx = zoomLayout.getPosX() + dx;
+        final float readDy = zoomLayout.getPosY() + dy;
+        ValueAnimator valueAnimator = ValueAnimator.ofObject(new PointEvaluator(),
+                new PointF(zoomLayout.getPosX(), zoomLayout.getPosY()),
+                new PointF(readDx, readDy));
+        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                PointF pointF = (PointF) valueAnimator.getAnimatedValue();
+                view.moveTo(pointF.x, pointF.y);
+            }
+        });
+        valueAnimator.setInterpolator(new LinearInterpolator());
+        valueAnimator.setDuration(200L);
+        valueAnimator.start();
     }
 
 }
